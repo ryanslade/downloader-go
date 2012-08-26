@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"github.com/ungerik/go-rss"
 	"io/ioutil"
@@ -14,8 +15,6 @@ import (
 
 const (
 	feedUrl         = "http://www.ezrss.it/feed/"
-	sleepDuration   = 1 * time.Hour
-	showsFile       = "shows.txt"
 	downloadedFiles = "downloaded.txt"
 )
 
@@ -115,13 +114,20 @@ func tryDownload(item rss.Item) {
 }
 
 func main() {
-	c := time.Tick(sleepDuration)
+	// Parse flags
+	var showsFileName string
+	flag.StringVar(&showsFileName, "showsfile", "shows.txt", "The name of the file containing the shows")
+	var sleepMinutes int
+	flag.IntVar(&sleepMinutes, "sleep", 60, "The number of minutes to sleep between checks")
+	flag.Parse()
+
+	c := time.Tick(time.Duration(sleepMinutes) * time.Minute)
 
 	for ; ; <-c {
 		log.Println("Getting feed...")
 
 		// Get shows
-		shows, err := getLines(showsFile)
+		shows, err := getLines(showsFileName)
 		if err != nil {
 			log.Println(err)
 			continue
