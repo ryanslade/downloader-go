@@ -1,3 +1,10 @@
+/*
+
+Monitors eztv feed and downloads torrent files that match a list of shows specified in a file.
+
+Takes command line arguments which can be seen by running in the command with the -? flag
+
+*/
 package main
 
 import (
@@ -52,7 +59,8 @@ func getLines(fileName string) ([]string, error) {
 
 func titleInShowList(title string, shows []string) bool {
 	for _, show := range shows {
-		if matched, err := regexp.MatchString(show, title); matched && err == nil {
+		// (?i) makes the regex case insensitive
+		if matched, err := regexp.MatchString("(?i)"+show, title); matched && err == nil {
 			return true
 		}
 	}
@@ -80,6 +88,7 @@ func tryDownload(item rss.Item) {
 		return
 	}
 
+	fmt.Println("Downloading")
 	res, err := http.Get(item.Link)
 	if err != nil {
 		log.Printf("Error downloading torrent: %v\n", err)
@@ -93,6 +102,7 @@ func tryDownload(item rss.Item) {
 		log.Printf("Error getting torrent data: %v\n", err)
 		return
 	}
+	fmt.Println("Downloaded")
 
 	err = ioutil.WriteFile(fileName, torrentData, 0666)
 	if err != nil {
@@ -126,7 +136,7 @@ func main() {
 	for ; ; <-c {
 		log.Println("Getting feed...")
 
-		// Get shows
+		// Get shows from file
 		shows, err := getLines(showsFileName)
 		if err != nil {
 			log.Println(err)

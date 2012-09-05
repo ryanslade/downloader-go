@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestTitleInShowList(t *testing.T) {
 	title := "Green Paradise - The Bahamas 1x4"
@@ -8,5 +10,10 @@ func TestTitleInShowList(t *testing.T) {
 
 	if !titleInShowList(title, shows) {
 		t.Error("Show should match")
+	}
+
+	shows = []string{"Breaking Bad", "Walking Dead", "green paradise", "Something Else"}
+	if !titleInShowList(title, shows) {
+		t.Error("Matches should ignore case")
 	}
 }
