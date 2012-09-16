@@ -9,6 +9,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/ungerik/go-rss"
@@ -87,46 +88,43 @@ func alreadyDownloaded(title string) bool {
 	return false
 }
 
-func tryDownload(item rss.Item, downloadPath string) {
+func tryDownload(item rss.Item, downloadPath string) error {
 	if alreadyDownloaded(item.Title) {
-		log.Println("Already downloaded")
-		return
+		return errors.New("Already downloaded")
 	}
 
 	fmt.Println("Downloading")
 	res, err := http.Get(item.Link)
 	if err != nil {
-		log.Printf("Error downloading torrent: %v\n", err)
-		return
+		return err
 	}
 
 	fileName := fmt.Sprintf("%v.torrent", item.Title)
 	defer res.Body.Close()
 	torrentData, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Printf("Error getting torrent data: %v\n", err)
-		return
+		return err
 	}
 	fmt.Println("Downloaded")
 
 	filePath := filepath.Join(downloadPath, fileName)
 	err = ioutil.WriteFile(filePath, torrentData, 0666)
 	if err != nil {
-		log.Printf("Error writing file: %v\n", err)
-		return
+		return err
 	}
 
 	file, err := os.OpenFile(downloadedFiles, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
-		log.Println("Error opening download file for writing: %v\n", err)
-		return
+		return err
 	}
 	defer file.Close()
 
 	_, err = file.WriteString(fmt.Sprintf("%v\n", item.Title))
 	if err != nil {
-		log.Println("Error writing to file: %v\n", err)
+		return err
 	}
+
+	return nil
 }
 
 func main() {
@@ -161,7 +159,10 @@ func main() {
 		for _, item := range rssChannel.Item {
 			if titleInShowList(item.Title, shows) {
 				log.Printf("Show matches: %v\n", item.Title)
-				tryDownload(item, downloadPath)
+				err := tryDownload(item, downloadPath)
+				if err != nil {
+					log.Printf("Error downloading: %v\n", err)
+				}
 			}
 		}
 
