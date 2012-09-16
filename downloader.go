@@ -16,6 +16,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 )
@@ -23,6 +24,10 @@ import (
 const (
 	feedUrl         = "http://www.ezrss.it/feed/"
 	downloadedFiles = "downloaded.txt"
+
+	// Defaults
+	defaultSleepMinutes = 60
+	defaultShowsFile    = "shows.txt"
 )
 
 func getLines(fileName string) ([]string, error) {
@@ -82,7 +87,7 @@ func alreadyDownloaded(title string) bool {
 	return false
 }
 
-func tryDownload(item rss.Item) {
+func tryDownload(item rss.Item, downloadPath string) {
 	if alreadyDownloaded(item.Title) {
 		log.Println("Already downloaded")
 		return
@@ -104,7 +109,8 @@ func tryDownload(item rss.Item) {
 	}
 	fmt.Println("Downloaded")
 
-	err = ioutil.WriteFile(fileName, torrentData, 0666)
+	filePath := filepath.Join(downloadPath, fileName)
+	err = ioutil.WriteFile(filePath, torrentData, 0666)
 	if err != nil {
 		log.Printf("Error writing file: %v\n", err)
 		return
@@ -126,9 +132,11 @@ func tryDownload(item rss.Item) {
 func main() {
 	// Parse flags
 	var showsFileName string
-	flag.StringVar(&showsFileName, "showsfile", "shows.txt", "The name of the file containing the shows")
+	flag.StringVar(&showsFileName, "showsfile", defaultShowsFile, "The name of the file containing the shows")
 	var sleepMinutes int
-	flag.IntVar(&sleepMinutes, "sleep", 60, "The number of minutes to sleep between checks")
+	flag.IntVar(&sleepMinutes, "sleep", defaultSleepMinutes, "The number of minutes to sleep between checks")
+	var downloadPath string
+	flag.StringVar(&downloadPath, "downloadPath", "", "The path where torrents files are downloaded to")
 	flag.Parse()
 
 	c := time.Tick(time.Duration(sleepMinutes) * time.Minute)
@@ -153,7 +161,7 @@ func main() {
 		for _, item := range rssChannel.Item {
 			if titleInShowList(item.Title, shows) {
 				log.Printf("Show matches: %v\n", item.Title)
-				tryDownload(item)
+				tryDownload(item, downloadPath)
 			}
 		}
 
