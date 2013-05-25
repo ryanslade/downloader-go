@@ -124,7 +124,9 @@ func main() {
 	flag.StringVar(&downloadPath, "downloadPath", "", "The path where torrents files are downloaded to")
 	flag.Parse()
 
-	for {
+	c := time.Tick(time.Duration(sleepMinutes) * time.Minute)
+
+	for ; ; <-c {
 		log.Println("Getting feed...")
 
 		// Get shows from file
@@ -151,6 +153,5 @@ func main() {
 		}
 
 		log.Println("Waiting...")
-		time.Sleep(time.Duration(sleepMinutes) * time.Minute)
 	}
 }
