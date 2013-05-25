@@ -17,3 +17,15 @@ func TestTitleInShowList(t *testing.T) {
 		t.Error("Matches should ignore case")
 	}
 }
+
+func TestGetLines(t *testing.T) {
+	shows, err := getLines("shows.txt")
+
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	if len(shows) != 3 {
+		t.Errorf("Expected 3 shows, got %v", len(shows))
+	}
+}

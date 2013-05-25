@@ -8,7 +8,6 @@ Takes command line arguments which can be seen by running in the command with th
 package main
 
 import (
-	"bufio"
 	"errors"
 	"flag"
 	"fmt"
@@ -19,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -32,35 +32,22 @@ const (
 )
 
 func getLines(fileName string) ([]string, error) {
-	lines := make([]string, 0)
-
-	f, err := os.Open(fileName)
+	data, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		return lines, err
+		return nil, err
 	}
-	defer f.Close()
 
-	reader := bufio.NewReader(f)
-	var lineBuffer []byte
-	for {
-		bytes, isPrefix, err := reader.ReadLine()
-		if err != nil {
-			// No more lines
-			break
-		}
+	lines := strings.Split(string(data), "\n")
 
-		lineBuffer = append(lineBuffer, bytes...)
-
-		if !isPrefix {
-			line := string(lineBuffer)
-			if len(line) > 0 {
-				lines = append(lines, line)
-				lineBuffer = make([]byte, 0)
-			}
+	cleanedLines := make([]string, 0)
+	for _, line := range lines {
+		cleaned := strings.TrimSpace(line)
+		if len(cleaned) > 0 {
+			cleanedLines = append(cleanedLines, cleaned)
 		}
 	}
 
-	return lines, nil
+	return cleanedLines, nil
 }
 
 func titleInShowList(title string, shows []string) bool {
@@ -137,9 +124,7 @@ func main() {
 	flag.StringVar(&downloadPath, "downloadPath", "", "The path where torrents files are downloaded to")
 	flag.Parse()
 
-	c := time.Tick(time.Duration(sleepMinutes) * time.Minute)
-
-	for ; ; <-c {
+	for {
 		log.Println("Getting feed...")
 
 		// Get shows from file
@@ -158,7 +143,6 @@ func main() {
 
 		for _, item := range rssChannel.Item {
 			if titleInShowList(item.Title, shows) {
-				log.Printf("Show matches: %v\n", item.Title)
 				err := tryDownload(item, downloadPath)
 				if err != nil {
 					log.Printf("Error downloading: %v\n", err)
@@ -167,5 +151,6 @@ func main() {
 		}
 
 		log.Println("Waiting...")
+		time.Sleep(time.Duration(sleepMinutes) * time.Minute)
 	}
 }
